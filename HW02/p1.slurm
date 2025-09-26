@@ -7,4 +7,4 @@
 
 cd $SLURM_SUBMIT_DIR
 g++ -O2 -std=c++17 hello_threads.cpp -o hello_threads -pthread
-./ hello_threads
+./hello_threads
