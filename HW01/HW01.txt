@@ -1,0 +1,7 @@
+Submission Instruction
+Specify your GitHub link here: https://github.com/wli565/ECE455/tree/main/HW01
+
+Problem 5:
+Describe the challenges you encounter when completing this lab assignment and how you overcome these challenges
+
+The challenges I faced was that I spent time on underestanding the meaning of these c++ files and what they are doing
