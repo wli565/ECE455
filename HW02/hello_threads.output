@@ -1,1 +1,5 @@
-/var/spool/slurmd/job2171926/slurm_script:10: permission denied: ./
+Hello from thread 0 of 5 
+Hello from thread 1 of 5 
+Hello from thread 2 of 5 
+Hello from thread Hello from thread 3 of 5 
+4 of 5 
