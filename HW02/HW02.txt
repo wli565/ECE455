@@ -1,0 +1,8 @@
+Submission Instruction
+Specify your GitHub link here: https://github.com/wli565/ECE455/tree/main/HW02
+
+Problem 6:
+Describe the challenges you encounter when completing this lab assignment and how you overcome these challenges
+
+The challenges are mainly focus on figuring out how does the code of creating and managing threads work, such as
+the function "emplace_back()"
