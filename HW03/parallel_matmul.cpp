@@ -3,10 +3,10 @@
 #include <omp.h>
 
 int main() {
-    const int N = 512;  // per your requirement
-    std::vector<std::vector<int>> A(N, std::vector<int>(N, 1));
-    std::vector<std::vector<int>> B(N, std::vector<int>(N, 2));
-    std::vector<std::vector<int>> C(N, std::vector<long long>(N, 0));
+    const int N = 1024;  // per your requirement
+    std::vector<std::vector<int>> A(N, std::vector(N, 1));
+    std::vector<std::vector<int>> B(N, std::vector(N, 2));
+    std::vector<std::vector<int>> C(N, std::vector(N, 0));
 
     #pragma omp parallel for
     for (int i = 0; i < N; ++i)
