@@ -1,0 +1,7 @@
+Submission Instruction
+Specify your GitHub link here: https://github.com/wli565/ECE455/tree/main/HW03
+
+Problem 4:
+Describe the challenges you encounter when completing this lab assignment and how you overcome these challenges
+
+The main challenge is to study about how to make codes run in parallel, such as "# pragma omp parallel for" something
