@@ -1,0 +1,8 @@
+Submission Instruction
+Specify your GitHub link here: https://github.com/wli565/ECE455/tree/main/HW05
+
+
+Summarize the challenges you faced in this lab:
+
+The main challenges in this lab were debugging CUDA kernel indexing and memory access patterns, 
+ensuring proper GPU resource allocation with Slurm, and correctly measuring performance using CUDA events.
