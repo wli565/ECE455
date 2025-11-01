@@ -1,0 +1,9 @@
+Submission Instruction
+Specify your GitHub link here: https://github.com/wli565/ECE455/tree/main/HW06
+
+
+Summarize the challenges you faced in this lab:
+
+
+The main challenges were correctly mapping threads and blocks in both the naive and tiled matrix multiplication implementations.
+Debugging CUDA kernels and managing device memory transfers between host and GPU also required careful attention.
