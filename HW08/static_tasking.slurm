@@ -14,4 +14,4 @@ g++ -std=c++20 static_tasking.cpp -o static_tasking \
     -I $SLURM_SUBMIT_DIR \
     -pthread
 
-./static_tasking
+stdbuf -o0 ./static_tasking
