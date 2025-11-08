@@ -6,6 +6,6 @@
 #SBATCH --output=static_tasking.output
 
 cd $SLURM_SUBMIT_DIR
-module load gcc
+module load gcc/14.3.0
 g++ -std=c++03 static_tasking.cpp -o static_tasking -I /srv/home/wli565/ECE455/HW08 -pthread
 ./static_tasking
