@@ -7,5 +7,5 @@
 
 cd $SLURM_SUBMIT_DIR
 module load gcc
-g++ -std=c++20 condition_task.cpp -o condition_task -I /srv/home/wli565/ECE455/HW08/ -pthread
+g++ -std=c++03 condition_task.cpp -o condition_task -I /srv/home/wli565/ECE455/HW08/ -pthread
 ./condition_task
