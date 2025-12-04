@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #SBATCH --job-name=e455_varjoints        # job 名字
-#SBATCH --partition=gpu                  # ⚠️ 这里改成 Euler 上的 GPU partition
+#SBATCH --partition=instruction                  # ⚠️ 这里改成 Euler 上的 GPU partition
 #SBATCH --gres=gpu:1                     # 申请 1 块 GPU
 #SBATCH --time=00:05:00                  # 最大运行时间
 #SBATCH --cpus-per-task=4                # 给程序 4 个 CPU 线程
