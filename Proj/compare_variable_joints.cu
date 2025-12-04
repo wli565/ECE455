@@ -162,29 +162,154 @@ void free_memory(MemoryPointers& mem, bool use_managed) {
 
 // ========== POWER MEASUREMENT ==========
 
-// Read power from available sources (Jetson-specific, returns 0.0 on other platforms)
-double read_system_power() {
-    // Try Jetson INA3221 sensor (VDD_IN rail - channel 1 measures total system input power)
-    const char* voltage_path = "/sys/devices/platform/bus@0/c240000.i2c/i2c-1/1-0040/hwmon/hwmon1/in1_input";
-    const char* current_path = "/sys/devices/platform/bus@0/c240000.i2c/i2c-1/1-0040/hwmon/hwmon1/curr1_input";
+// // Read power from available sources (Jetson-specific, returns 0.0 on other platforms)
+// double read_system_power() {
+//     // Try Jetson INA3221 sensor (VDD_IN rail - channel 1 measures total system input power)
+//     const char* voltage_path = "/sys/devices/platform/bus@0/c240000.i2c/i2c-1/1-0040/hwmon/hwmon1/in1_input";
+//     const char* current_path = "/sys/devices/platform/bus@0/c240000.i2c/i2c-1/1-0040/hwmon/hwmon1/curr1_input";
+
+//     std::ifstream volt_file(voltage_path);
+//     std::ifstream curr_file(current_path);
+
+//     if (volt_file.is_open() && curr_file.is_open()) {
+//         int voltage_mv, current_ma;
+//         volt_file >> voltage_mv;
+//         curr_file >> current_ma;
+//         volt_file.close();
+//         curr_file.close();
+
+//         // Calculate power in watts: (mV * mA) / 1,000,000
+//         return (voltage_mv * current_ma) / 1000000.0;
+//     }
+
+//     // Power measurement not available on this platform
+//     return 0.0;
+// }
+// ====== Helpers for different platforms ======
+
+double read_jetson_board_power() {
+    // Jetson INA3221, same as before
+    const char* voltage_path =
+        "/sys/devices/platform/bus@0/c240000.i2c/i2c-1/1-0040/hwmon/hwmon1/in1_input";
+    const char* current_path =
+        "/sys/devices/platform/bus@0/c240000.i2c/i2c-1/1-0040/hwmon/hwmon1/curr1_input";
 
     std::ifstream volt_file(voltage_path);
     std::ifstream curr_file(current_path);
 
-    if (volt_file.is_open() && curr_file.is_open()) {
-        int voltage_mv, current_ma;
-        volt_file >> voltage_mv;
-        curr_file >> current_ma;
-        volt_file.close();
-        curr_file.close();
-
-        // Calculate power in watts: (mV * mA) / 1,000,000
-        return (voltage_mv * current_ma) / 1000000.0;
+    if (!volt_file.is_open() || !curr_file.is_open()) {
+        return 0.0;
     }
 
-    // Power measurement not available on this platform
+    int voltage_mv = 0, current_ma = 0;
+    volt_file >> voltage_mv;
+    curr_file >> current_ma;
+
+    if (!volt_file.good() || !curr_file.good()) {
+        return 0.0;
+    }
+
+    // (mV * mA) / 1e6 = W
+    return (voltage_mv * current_ma) / 1000000.0;
+}
+
+// --- GPU power via NVML (NVIDIA only) ---
+double read_gpu_power_nvml() {
+    static bool nvml_inited = false;
+    static bool nvml_available = false;
+    static nvmlDevice_t dev;
+
+    if (!nvml_inited) {
+        nvml_inited = true;
+        if (nvmlInit_v2() != NVML_SUCCESS) {
+            return 0.0;
+        }
+        // 这里默认取 GPU 0；如果以后要支持多 GPU 可以扩展
+        if (nvmlDeviceGetHandleByIndex(0, &dev) == NVML_SUCCESS) {
+            nvml_available = true;
+        }
+    }
+
+    if (!nvml_available) return 0.0;
+
+    unsigned int mW = 0;
+    nvmlReturn_t r = nvmlDeviceGetPowerUsage(dev, &mW);
+    if (r != NVML_SUCCESS) return 0.0;
+
+    return mW / 1000.0;  // 转成 W
+}
+
+// --- CPU power via Intel RAPL (approximate) ---
+// 通过 energy_uj 的差分算瞬时功率
+double read_cpu_power_rapl() {
+    const char* energy_path = "/sys/class/powercap/intel-rapl:0/energy_uj";
+
+    static bool init = false;
+    static long long last_energy_uj = 0;
+    static std::chrono::steady_clock::time_point last_time;
+
+    std::ifstream f(energy_path);
+    if (!f.is_open()) {
+        return 0.0;
+    }
+
+    long long energy_uj = 0;
+    f >> energy_uj;
+    if (!f.good()) {
+        return 0.0;
+    }
+
+    auto now = std::chrono::steady_clock::now();
+
+    if (!init) {
+        init = true;
+        last_energy_uj = energy_uj;
+        last_time = now;
+        return 0.0;  // 第一次没有 delta
+    }
+
+    double delta_j = (energy_uj - last_energy_uj) / 1e6;  // microJ → J
+    double delta_t = std::chrono::duration<double>(now - last_time).count();  // s
+
+    last_energy_uj = energy_uj;
+    last_time = now;
+
+    if (delta_t <= 0.0 || delta_j < 0.0) {
+        return 0.0;
+    }
+
+    double power_w = delta_j / delta_t;
+    return (power_w > 0.0 ? power_w : 0.0);
+}
+
+// ========== PLATFORM POWER MEASUREMENT ==========
+
+// 返回近似的 "platform power":
+// Jetson: VDD_IN (board power)
+// Intel+NVIDIA: CPU_RAPL + GPU_NVML
+double read_system_power() {
+    // 1) Try Jetson board sensor first
+    double jetson_w = read_jetson_board_power();
+    if (jetson_w > 0.0) {
+        return jetson_w;
+    }
+
+    // 2) Fallback: Intel RAPL + NVIDIA NVML
+    double cpu_w = read_cpu_power_rapl();
+    double gpu_w = read_gpu_power_nvml();
+
+    double total = 0.0;
+    if (cpu_w > 0.0) total += cpu_w;
+    if (gpu_w > 0.0) total += gpu_w;
+
+    if (total > 0.0) {
+        return total;
+    }
+
+    // 3) If everything fails, report 0.0 (not available)
     return 0.0;
 }
+
 
 // Power sampler class for continuous measurement
 class PowerSampler {
@@ -193,14 +318,25 @@ class PowerSampler {
     std::thread sampler_thread;
     std::vector<double> samples;
 
+    // void sample_loop() {
+    //     while (running) {
+    //         double power = read_system_power();
+    //         if (power > 0.0) {
+    //             samples.push_back(power);
+    //         }
+    //     }
+    // }
     void sample_loop() {
+        using namespace std::chrono_literals;
         while (running) {
             double power = read_system_power();
             if (power > 0.0) {
                 samples.push_back(power);
             }
+            std::this_thread::sleep_for(50ms);  // 20Hz 采样
         }
     }
+
 
    public:
     PowerSampler() : running(false) {}
