@@ -10,7 +10,7 @@
 cd $SLURM_SUBMIT_DIR
 
 # 载入 CUDA / NVML（按 Euler 文档来，示例）
-module load cuda
+module load nvidia/cuda
 
 # 编译（用你的 Makefile）
 make compare_variable_joints
