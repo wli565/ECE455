@@ -1,0 +1,56 @@
+Auto-detected GPU with SM 89
+Building for x86_64 with SM 89
+nvcc -O3 -use_fast_math -Xcompiler -Wall -Xcompiler -Wextra -Xcompiler -fopenmp -gencode arch=compute_89,code=sm_89 -c small_matmul.cu -o small_matmul.o
+nvcc -O3 -use_fast_math -Xcompiler -Wall -Xcompiler -Wextra -Xcompiler -fopenmp -gencode arch=compute_89,code=sm_89 -c compare_variable_joints.cu -o compare_variable_joints.o
+nvcc -O3 -use_fast_math -Xcompiler -Wall -Xcompiler -Wextra -Xcompiler -fopenmp -gencode arch=compute_89,code=sm_89 -o compare_variable_joints small_matmul.o compare_variable_joints.o -lgomp -lnvidia-ml
+Power measurement working: 11.36W
+
+
+========================================
+  Matrix Chain Multiplication Benchmark
+========================================
+========================================
+  Matrix Chain Multiplication Test
+  Number of matrix sets: 500000
+  Threads per block: 64
+  OpenMP threads: 4
+========================================
+
+Testing different numbers of joints (chain length)
+Each set computes: I × M0 × M1 × ... × Mn
+
+Joints | CPU (ms) | OMP (ms) |  GPU_P (ms) | GPU_P_X (ms) | GPU_P_T (ms) | CPU GF | OMP GF | GPU_P_GF |  Speedup |   CPU_W |   OMP_W | GPU_P_W | OK
+-------|----------|----------|-------------|--------------|--------------|--------|--------|----------|----------|---------|---------|---------|---
+     2 |   13.528 |    7.424 |       0.583 |        3.654 |        4.237 |    4.7 |    8.6 |    109.8 |    3.19x | 11.3510W | 20.3800W | 29.3580W | ✓
+     4 |   24.330 |   12.227 |       0.538 |        6.018 |        6.556 |    7.9 |   15.7 |    357.0 |    3.71x | 29.3390W | 29.3630W | 29.2830W | ✓
+     6 |   31.887 |   15.610 |       0.858 |        8.408 |        9.266 |   10.0 |   20.5 |    373.0 |    3.44x | 29.3900W | 29.3750W | 29.3830W | ✓
+     8 |   40.105 |   20.914 |       0.944 |       10.795 |       11.739 |   11.2 |   21.4 |    474.6 |    3.42x | 29.5490W | 29.6260W | 29.4540W | ✓
+    10 |   51.254 |   25.753 |       1.368 |       13.186 |       14.554 |   11.2 |   22.4 |    420.9 |    3.52x | 29.4730W | 29.5600W | 29.4830W | ✓
+    12 |   59.414 |   31.511 |       2.473 |       15.546 |       18.018 |   11.8 |   22.3 |    284.7 |    3.30x | 29.7210W | 29.6470W | 29.5610W | ✓
+    14 |   70.569 |   35.888 |       2.962 |       17.942 |       20.904 |   11.8 |   23.2 |    280.9 |    3.38x | 29.7920W | 29.6950W | 29.6370W | ✓
+    16 |   78.668 |   40.621 |       4.105 |       20.305 |       24.410 |   12.2 |   23.6 |    233.9 |    3.22x | 29.6980W | 29.5790W | 29.4780W | ✓
+    18 |   88.423 |   44.754 |       3.715 |       22.697 |       26.412 |   12.3 |   24.3 |    292.9 |    3.35x | 29.7610W | 29.6800W | 29.5890W | ✓
+    20 |   99.471 |   51.737 |       3.640 |       25.071 |       28.711 |   12.2 |   23.5 |    334.1 |    3.46x | 29.7970W | 29.6050W | 29.6890W | ✓
+    22 |  107.675 |   57.263 |       4.973 |       27.457 |       32.430 |   12.5 |   23.5 |    270.2 |    3.32x | 29.8150W | 29.6030W | 29.6090W | ✓
+    24 |  117.407 |   59.798 |       6.021 |       29.844 |       35.865 |   12.5 |   24.6 |    244.5 |    3.27x | 29.8540W | 29.7170W | 29.7000W | ✓
+    26 |  126.930 |   67.454 |       5.509 |       32.225 |       37.734 |   12.6 |   23.7 |    290.4 |    3.36x | 29.8300W | 29.7250W | 29.7170W | ✓
+    28 |  136.659 |   72.331 |       6.437 |       34.600 |       41.037 |   12.6 |   23.9 |    268.4 |    3.33x | 29.8230W | 29.7770W | 29.7770W | ✓
+    30 |  146.275 |   77.409 |       6.553 |       36.988 |       43.542 |   12.7 |   24.0 |    283.2 |    3.36x | 29.8060W | 29.7770W | 29.7530W | ✓
+    32 |  155.925 |   81.703 |       7.894 |       39.364 |       47.258 |   12.7 |   24.3 |    251.3 |    3.30x | 29.8720W | 29.8180W | 29.7930W | ✓
+
+Legend:
+  Joints    = Number of 4x4 matrices in chain
+  CPU/OMP   = Single-threaded/OpenMP execution time
+  GPU_P     = GPU Pinned memory kernel time (compute only)
+  GPU_P_X   = GPU Pinned transfer time (CPU↔GPU)
+  GPU_P_T   = GPU Pinned total time (kernel + transfer)
+  GPU_M     = GPU Managed memory kernel time (compute only)
+  GPU_M_X   = GPU Managed transfer time (minimal/zero)
+  GPU_M_T   = GPU Managed total time (kernel + transfer)
+  GF        = GFLOPS (billions of floating-point ops/sec)
+  Speedup   = CPU time / GPU_P_T time
+  *_W       = Average power consumption in watts
+  OK        = Verification passed (✓) or failed (✗)
+
+Note: GPU_M columns only appear on unified memory devices
+========================================
